@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Planner</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- LOGIN PAGE -->
+  <div id="login-page" class="page">
+    <div class="auth-card">
+      <div class="auth-logo">📅</div>
+      <h2>Daily Planner</h2>
+      <button class="btn-google" onclick="signInWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
+        Continue with Google
+      </button>
+      <div class="auth-divider"><span>or</span></div>
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" onkeydown="if(event.key==='Enter') login()" />
+      <button class="btn-primary" onclick="login()">Login with Email</button>
+      <p id="login-error" class="error-msg"></p>
+      <p class="auth-switch">No account? <a href="#" onclick="showRegister()">Register</a></p>
+    </div>
+  </div>
+
+  <!-- REGISTER PAGE -->
+  <div id="register-page" class="page hidden">
+    <div class="auth-card">
+      <div class="auth-logo">📅</div>
+      <h2>Create Account</h2>
+      <button class="btn-google" onclick="signInWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
+        Continue with Google
+      </button>
+      <div class="auth-divider"><span>or</span></div>
+      <input type="email" id="reg-email" placeholder="Email" />
+      <input type="password" id="reg-password" placeholder="Password (min 6 chars)" onkeydown="if(event.key==='Enter') register()" />
+      <button class="btn-primary" onclick="register()">Register with Email</button>
+      <p id="register-error" class="error-msg"></p>
+      <p class="auth-switch">Have an account? <a href="#" onclick="showLogin()">Login</a></p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard-page" class="page hidden">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="brand-icon">📅</span>
+        <span class="brand-name">Daily Planner</span>
+        <span class="today-date" id="today-label"></span>
+      </div>
+      <div class="topbar-user">
+        <div class="user-menu-wrap">
+          <button class="user-email-btn" id="user-email" onclick="toggleSettings()"></button>
+          <div class="settings-popup hidden" id="settings-popup">
+            <div class="settings-title">Account Settings</div>
+            <div class="settings-email-label" id="settings-email-label"></div>
+
+            <div id="set-password-section">
+              <p class="settings-section-label" id="password-section-title">Set Password</p>
+              <input type="password" id="current-password-input" placeholder="Current password" class="hidden" />
+              <input type="password" id="new-password-input" placeholder="New password (min 6 chars)" />
+              <input type="password" id="confirm-password-input" placeholder="Confirm new password" />
+              <button class="btn-settings-save" onclick="savePassword()">Save Password</button>
+              <p id="password-msg" class="settings-msg"></p>
+            </div>
+
+            <hr class="settings-divider" />
+            <button class="btn-settings-logout" onclick="logout()">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace">
+
+      <!-- Timetable -->
+      <div class="timetable-panel">
+        <div class="panel-header timetable-header">
+          <span id="schedule-title">Today's Schedule</span>
+          <div class="header-btns">
+            <!-- Undo: step back up to 10 times -->
+            <button class="hdr-btn hdr-btn-undo" id="btn-undo" onclick="undoTimetable()" title="Nothing to undo" disabled><span class="btn-icon">↩</span><span class="btn-label"> Undo</span></button>
+            <button class="hdr-btn" onclick="openDatePicker()" title="Jump to a date"><span class="btn-icon">📅</span><span class="btn-label"> Pick Date</span></button>
+            <button class="hdr-btn hdr-btn-warn" id="btn-revert" onclick="revertTimetable()" title="Revert"><span class="btn-icon">↺</span><span class="btn-label"> Revert</span></button>
+            <button class="hdr-btn hdr-btn-today" id="btn-today" onclick="goToToday()" title="Back to today"><span class="btn-icon">⌂</span><span class="btn-label"> Today</span></button>
+          </div>
+          <!-- hidden input — showPicker() opens native date dialog on click -->
+          <input type="date" id="date-picker" onchange="onDatePicked(this.value)" />
+        </div>
+        <!-- Mobile: shows when a preset is selected, waiting for slot tap -->
+        <div id="mobile-preset-hint" class="mobile-preset-hint hidden">
+          Tap a slot to apply: <strong id="mobile-preset-name"></strong>
+          <button class="mobile-preset-cancel" onclick="clearMobilePreset()">✕</button>
+        </div>
+        <div id="timetable" class="timetable-scroll"></div>
+      </div>
+
+      <!-- Presets -->
+      <div class="presets-panel">
+        <div class="panel-header">Quick Actions</div>
+        <p class="presets-hint desktop-only">Drag into the schedule · Click text to edit</p>
+        <p class="presets-hint mobile-only">Tap item → tap a slot to apply</p>
+        <div class="preset-input-row">
+          <input type="text" id="preset-input" placeholder="Add new action..." onkeydown="if(event.key==='Enter') addPreset()" />
+          <button class="btn-add" onclick="addPreset()" title="Add">+</button>
+        </div>
+        <div id="preset-list" class="preset-list"></div>
+      </div>
+
+      <!-- Mobile bottom tab bar -->
+      <nav class="mobile-tabbar">
+        <button class="mobile-tab active" id="tab-schedule" onclick="switchMobileTab('schedule')">
+          <span class="tab-icon">📅</span>
+          <span class="tab-label">Schedule</span>
+        </button>
+        <button class="mobile-tab" id="tab-presets" onclick="switchMobileTab('presets')">
+          <span class="tab-icon">⚡</span>
+          <span class="tab-label">Quick Actions</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
