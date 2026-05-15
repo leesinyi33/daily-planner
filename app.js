@@ -650,10 +650,13 @@ function endTouchDrag(touch) {
 
 // ── SETTINGS POPUP ───────────────────────────────────────────
 window.toggleSettings = function () {
-  const popup = document.getElementById('settings-popup');
+  const popup   = document.getElementById('settings-popup');
+  const overlay = document.getElementById('settings-overlay');
+  const isHidden = popup.classList.contains('hidden');
   popup.classList.toggle('hidden');
+  overlay?.classList.toggle('hidden', !isHidden);
   // Clear fields & message on open
-  if (!popup.classList.contains('hidden')) {
+  if (isHidden) {
     document.getElementById('current-password-input').value = '';
     document.getElementById('new-password-input').value = '';
     document.getElementById('confirm-password-input').value = '';
