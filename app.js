@@ -316,18 +316,28 @@ function renderPresets() {
     });
     item.addEventListener('dragend', () => item.classList.remove('dragging'));
 
-    // Mobile touch drag
+    // Mobile touch drag — only prevent scroll after drag confirmed (> 8px move)
     let touchMoved = false;
+    let touchStartX = 0, touchStartY = 0;
     item.addEventListener('touchstart', e => {
       touchMoved = false;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
     }, { passive: true });
     item.addEventListener('touchmove', e => {
-      if (!touchMoved) { touchMoved = true; startTouchDrag(text, e.touches[0]); }
-      else moveTouchGhost(e.touches[0]);
-      e.preventDefault();
+      const dx = Math.abs(e.touches[0].clientX - touchStartX);
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+      if (!touchMoved && (dx > 8 || dy > 8)) {
+        touchMoved = true;
+        startTouchDrag(text, e.touches[0]);
+      }
+      if (touchMoved) {
+        moveTouchGhost(e.touches[0]);
+        e.preventDefault(); // block scroll only while dragging
+      }
     }, { passive: false });
     item.addEventListener('touchend', e => {
-      if (touchMoved) endTouchDrag();
+      if (touchMoved) endTouchDrag(e.changedTouches[0]);
     });
 
     const handle = document.createElement('span');
@@ -581,22 +591,27 @@ function moveTouchGhost(touch) {
   }
 }
 
-function endTouchDrag() {
+function endTouchDrag(touch) {
   touchDragGhost?.remove();
   touchDragGhost = null;
   touchDropTarget?.classList.remove('drag-over');
-  if (touchDropTarget && touchDragText) {
-    const groupId = touchDropTarget.dataset.id;
-    const group   = slotGroups.find(g => g.id === groupId);
-    if (group) {
-      pushUndo();
-      group.text = group.text ? `${group.text}\n${touchDragText}` : touchDragText;
-      renderTimetable();
-      debouncedSave();
+  touchDropTarget = null;
+
+  if (touch && touchDragText) {
+    // Use final finger position to find drop target
+    const el  = document.elementFromPoint(touch.clientX, touch.clientY);
+    const row = el?.closest('.slot-row');
+    if (row) {
+      const group = slotGroups.find(g => g.id === row.dataset.id);
+      if (group) {
+        pushUndo();
+        group.text = group.text ? `${group.text}\n${touchDragText}` : touchDragText;
+        renderTimetable();
+        debouncedSave();
+      }
     }
   }
-  touchDropTarget = null;
-  touchDragText   = null;
+  touchDragText = null;
 }
 
 // ── SETTINGS POPUP ───────────────────────────────────────────
