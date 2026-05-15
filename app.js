@@ -49,6 +49,7 @@ const TODAY = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${
 let currentDate = TODAY;      // the date currently shown in the timetable
 let undoStack = [];           // deep-copy snapshots, max 10
 let selectedPreset = null;    // mobile tap-to-apply
+let presetEditMode = false;   // mobile edit mode toggle
 
 // ── SLOT UTILS ───────────────────────────────────────────────
 function slotToTime(slot) {
@@ -177,7 +178,19 @@ function renderTimetable() {
     setTimeout(autoResize, 0);
 
     // Push undo when user starts editing a slot (once per focus, not per keystroke)
-    textarea.addEventListener('focus', pushUndo);
+    textarea.addEventListener('focus', () => {
+      if (isMobile() && selectedPreset) {
+        pushUndo();
+        textarea.value = textarea.value ? `${textarea.value}\n${selectedPreset}` : selectedPreset;
+        group.text = textarea.value;
+        autoResize();
+        debouncedSave();
+        clearMobilePreset();
+        textarea.blur();
+        return;
+      }
+      pushUndo();
+    });
 
     // Drop target
     row.addEventListener('dragover', e => {
@@ -349,7 +362,20 @@ function renderPresets() {
     label.className = 'preset-text';
     label.textContent = text;
     label.title = 'Click to edit';
-    label.onclick = () => startEditPreset(label, idx);
+    // Desktop: always edit on click
+    // Mobile: handled by item click below
+    label.onclick = () => { if (!isMobile()) startEditPreset(label, idx); };
+
+    // Mobile: tap behaviour depends on edit mode
+    item.addEventListener('click', e => {
+      if (!isMobile()) return;
+      if (e.target.closest('.preset-delete') || e.target.closest('.preset-link-btn')) return;
+      if (presetEditMode) {
+        startEditPreset(label, idx);
+      } else {
+        selectPresetMobile(text, item);
+      }
+    });
 
     // Link button — only shown if preset text is/contains a URL
     const urls = extractUrls(text);
@@ -545,6 +571,37 @@ window.goToToday = async function () {
 
 // ── MOBILE UTILS ─────────────────────────────────────────────
 function isMobile() { return window.innerWidth <= 768; }
+
+// ── PRESET EDIT MODE (mobile) ────────────────────────────────
+window.togglePresetEditMode = function () {
+  presetEditMode = !presetEditMode;
+  const btn = document.getElementById('preset-edit-btn');
+  btn.classList.toggle('active', presetEditMode);
+  const hint = document.getElementById('presets-hint-mobile');
+  if (hint) hint.textContent = presetEditMode
+    ? 'Tap item to edit text'
+    : 'Tap item to apply · ✏️ to edit';
+  // Deselect any pending apply
+  if (!presetEditMode) clearMobilePreset();
+};
+
+// ── TAP-TO-APPLY (mobile, edit mode OFF) ─────────────────────
+window.clearMobilePreset = function () {
+  selectedPreset = null;
+  document.querySelectorAll('.preset-item.mobile-selected')
+    .forEach(el => el.classList.remove('mobile-selected'));
+  document.getElementById('mobile-preset-hint')?.classList.add('hidden');
+};
+
+function selectPresetMobile(text, itemEl) {
+  if (selectedPreset === text) { clearMobilePreset(); return; }
+  clearMobilePreset();
+  selectedPreset = text;
+  itemEl.classList.add('mobile-selected');
+  document.getElementById('mobile-preset-name').textContent = `"${text}"`;
+  document.getElementById('mobile-preset-hint').classList.remove('hidden');
+  closePresetSheet();
+}
 
 // ── BOTTOM SHEET ─────────────────────────────────────────────
 window.openPresetSheet = function () {

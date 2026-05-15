@@ -716,6 +716,38 @@ h2 { text-align: center; color: #1a1a2e; font-size: 1.4rem; font-weight: 600; }
   line-height: 1;
 }
 
+/* ── PRESETS HEADER ──────────────────────────────────────────── */
+.presets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preset-edit-mode-btn {
+  background: none;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  color: #999;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.preset-edit-mode-btn.active {
+  background: #eef2ff;
+  border-color: #6264a7;
+  color: #6264a7;
+  font-weight: 600;
+}
+
+/* Selected preset (apply mode) */
+.preset-item.mobile-selected {
+  border-color: #6264a7;
+  background: #eef2ff;
+  box-shadow: 0 0 0 2px #c5cae9;
+}
+
 /* ── SHEET BACKDROP (mobile only, hidden on desktop) ─────────── */
 .sheet-backdrop {
   display: none;

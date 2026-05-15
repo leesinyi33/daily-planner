@@ -92,15 +92,23 @@
           </div>
           <input type="date" id="date-picker" onchange="onDatePicked(this.value)" />
         </div>
+        <!-- Mobile apply hint -->
+        <div id="mobile-preset-hint" class="mobile-preset-hint hidden">
+          Tap a slot to apply: <strong id="mobile-preset-name"></strong>
+          <button class="mobile-preset-cancel" onclick="clearMobilePreset()">✕</button>
+        </div>
         <div id="timetable" class="timetable-scroll"></div>
       </div>
 
       <!-- Presets (desktop: side panel | mobile: bottom sheet) -->
       <div class="presets-panel" id="presets-panel">
         <div class="sheet-handle-bar" onclick="closePresetSheet()"></div>
-        <div class="panel-header">Quick Actions</div>
+        <div class="panel-header presets-header">
+          <span>Quick Actions</span>
+          <button class="preset-edit-mode-btn mobile-only" id="preset-edit-btn" onclick="togglePresetEditMode()" title="Edit mode">✏️ Edit</button>
+        </div>
         <p class="presets-hint desktop-only">Drag into the schedule · Click to edit</p>
-        <p class="presets-hint mobile-only">Drag to timetable · Tap to edit</p>
+        <p class="presets-hint mobile-only" id="presets-hint-mobile">Tap item to apply · ✏️ to edit</p>
         <div class="preset-input-row">
           <input type="text" id="preset-input" placeholder="Add new action..." onkeydown="if(event.key==='Enter') addPreset()" />
           <button class="btn-add" onclick="addPreset()" title="Add">+</button>
