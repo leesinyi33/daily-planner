@@ -329,29 +329,6 @@ function renderPresets() {
     });
     item.addEventListener('dragend', () => item.classList.remove('dragging'));
 
-    // Mobile touch drag — only prevent scroll after drag confirmed (> 8px move)
-    let touchMoved = false;
-    let touchStartX = 0, touchStartY = 0;
-    item.addEventListener('touchstart', e => {
-      touchMoved = false;
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-    item.addEventListener('touchmove', e => {
-      const dx = Math.abs(e.touches[0].clientX - touchStartX);
-      const dy = Math.abs(e.touches[0].clientY - touchStartY);
-      if (!touchMoved && (dx > 8 || dy > 8)) {
-        touchMoved = true;
-        startTouchDrag(text, e.touches[0]);
-      }
-      if (touchMoved) {
-        moveTouchGhost(e.touches[0]);
-        e.preventDefault(); // block scroll only while dragging
-      }
-    }, { passive: false });
-    item.addEventListener('touchend', e => {
-      if (touchMoved) endTouchDrag(e.changedTouches[0]);
-    });
 
     const handle = document.createElement('span');
     handle.className = 'drag-handle';
