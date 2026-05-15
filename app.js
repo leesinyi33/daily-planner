@@ -62,6 +62,26 @@ function nowSlotIndex() {
   return Math.floor((d.getHours() * 60 + d.getMinutes()) / 30);
 }
 
+// ── URL DETECTION ─────────────────────────────────────────────
+function extractUrls(text) {
+  return (text.match(/https?:\/\/[^\s]+/g) || []);
+}
+
+function renderLinkPills(container, text) {
+  container.innerHTML = '';
+  extractUrls(text).forEach(url => {
+    const a = document.createElement('a');
+    a.className = 'link-pill';
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = '🔗 ' + url.replace(/^https?:\/\//, '').slice(0, 40) + (url.length > 50 ? '…' : '');
+    a.title = url;
+    container.appendChild(a);
+  });
+  container.style.display = container.children.length ? 'flex' : 'none';
+}
+
 function initSlotGroups() {
   slotGroups = Array.from({ length: 48 }, (_, i) => ({
     id: `g${i}_${Date.now()}`,
@@ -142,9 +162,15 @@ function renderTimetable() {
       textarea.style.height = Math.max(slotCount * 50 - 16, textarea.scrollHeight) + 'px';
     };
 
+    // Link pills — shown below textarea when text contains URLs
+    const linkPills = document.createElement('div');
+    linkPills.className = 'slot-link-pills';
+    renderLinkPills(linkPills, group.text);
+
     textarea.addEventListener('input', () => {
       group.text = textarea.value;
       autoResize();
+      renderLinkPills(linkPills, textarea.value);
       debouncedSave();
     });
 
@@ -203,8 +229,13 @@ function renderTimetable() {
       actions.appendChild(splitBtn);
     }
 
+    const slotBody = document.createElement('div');
+    slotBody.className = 'slot-body';
+    slotBody.appendChild(textarea);
+    slotBody.appendChild(linkPills);
+
     row.appendChild(timeLabel);
-    row.appendChild(textarea);
+    row.appendChild(slotBody);
     row.appendChild(actions);
     container.appendChild(row);
   });
@@ -303,6 +334,20 @@ function renderPresets() {
     label.textContent = text;
     label.title = 'Click to edit';
     label.onclick = () => startEditPreset(label, idx);
+
+    // Link button — only shown if preset text is/contains a URL
+    const urls = extractUrls(text);
+    if (urls.length) {
+      const linkBtn = document.createElement('a');
+      linkBtn.className = 'preset-link-btn';
+      linkBtn.href = urls[0];
+      linkBtn.target = '_blank';
+      linkBtn.rel = 'noopener noreferrer';
+      linkBtn.textContent = '🔗';
+      linkBtn.title = urls[0];
+      linkBtn.onclick = e => e.stopPropagation();
+      item.appendChild(linkBtn);
+    }
 
     const del = document.createElement('button');
     del.className = 'preset-delete';
