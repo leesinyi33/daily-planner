@@ -830,7 +830,15 @@ h2 { text-align: center; color: #1a1a2e; font-size: 1.4rem; font-weight: 600; }
   }
   .presets-panel.sheet-open { transform: translateY(0); }
 
-  .preset-list { padding-bottom: 16px; }
+  .preset-list {
+    padding-bottom: 16px;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+  .presets-panel { overflow: visible; }
+  .preset-item { touch-action: pan-y; cursor: default; }
 
   /* Handle bar at top of sheet */
   .sheet-handle-bar {

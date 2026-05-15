@@ -320,7 +320,7 @@ function renderPresets() {
   presets.forEach((text, idx) => {
     const item = document.createElement('div');
     item.className = 'preset-item';
-    item.draggable = true;
+    item.draggable = !isMobile(); // draggable only on desktop; mobile uses tap-to-apply
 
     item.addEventListener('dragstart', e => {
       e.dataTransfer.setData('text/plain', text);
