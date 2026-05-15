@@ -793,7 +793,16 @@ h2 { text-align: center; color: #1a1a2e; font-size: 1.4rem; font-weight: 600; }
   .user-email-btn { font-size: 0.72rem; padding: 0.2rem 0.6rem; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Settings popup full-width on mobile */
-  .settings-popup { width: calc(100vw - 1.5rem); right: -0.75rem; max-height: calc(100vh - 70px); overflow-y: auto; }
+  .settings-popup {
+    position: fixed;
+    top: 58px;
+    left: 0.75rem;
+    right: 0.75rem;
+    width: auto;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    z-index: 999;
+  }
 
   /* Workspace full height, timetable always visible */
   .workspace { padding-bottom: 56px; }
