@@ -716,11 +716,36 @@ h2 { text-align: center; color: #1a1a2e; font-size: 1.4rem; font-weight: 600; }
   line-height: 1;
 }
 
-/* Selected preset on mobile */
-.preset-item.mobile-selected {
-  border-color: #6264a7;
-  background: #eef2ff;
-  box-shadow: 0 0 0 2px #c5cae9;
+/* ── SHEET BACKDROP (mobile only, hidden on desktop) ─────────── */
+.sheet-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 49;
+}
+.sheet-backdrop.active { display: block; }
+
+/* Sheet drag handle bar */
+.sheet-handle-bar { display: none; }
+
+/* Touch drag ghost */
+.drag-ghost {
+  position: fixed;
+  background: #6264a7;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  pointer-events: none;
+  z-index: 9999;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.92;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  transform: translate(-50%, -130%);
 }
 
 /* ── RESPONSIVE — MOBILE ≤ 768px ────────────────────────────── */
@@ -735,57 +760,77 @@ h2 { text-align: center; color: #1a1a2e; font-size: 1.4rem; font-weight: 600; }
   /* Settings popup full-width on mobile */
   .settings-popup { width: calc(100vw - 1.5rem); right: -0.75rem; }
 
-  /* Workspace stacks vertically, leaves room for tab bar */
-  .workspace { flex-direction: column; padding-bottom: 56px; }
+  /* Workspace full height, timetable always visible */
+  .workspace { padding-bottom: 56px; }
+  .timetable-panel { flex: 1; min-width: 0; }
 
-  /* Both panels take full width */
-  .timetable-panel, .presets-panel {
-    width: 100%;
-    flex: 1;
-    min-width: 0;
-    border-right: none;
-  }
-
-  /* Presets hidden by default on mobile — tab switches it */
-  .presets-panel { display: none; }
-  .presets-panel.mobile-active { display: flex; flex: 1; }
-  .timetable-panel.mobile-hidden { display: none; }
-
-  /* Timetable header — icon only on mobile, labels hidden */
+  /* Timetable header — icon only, labels hidden */
   .timetable-header { flex-wrap: wrap; gap: 0.3rem; padding: 0.4rem 0.6rem; }
   .header-btns { gap: 4px; }
   .hdr-btn { padding: 0.3rem 0.5rem; font-size: 0.72rem; }
   .btn-label { display: none; }
 
-  /* Bigger touch targets for slot rows */
+  /* Bigger touch targets */
   .slot-row { min-height: 46px; }
   .slot-time { min-width: 44px; font-size: 0.7rem; padding: 0 6px; }
   .slot-textarea { font-size: 0.88rem; padding: 10px 8px; }
-
-  /* Merge/split buttons easier to tap */
   .merge-btn, .split-btn { width: 28px; height: 28px; font-size: 0.9rem; }
   .slot-actions { opacity: 1; }
 
-  /* Presets list touch-friendly */
-  .preset-item { padding: 0.65rem 0.75rem; font-size: 0.9rem; }
-  .preset-list { padding-bottom: 64px; }
   .desktop-only { display: none; }
   .mobile-only { display: block; }
+
+  /* ── BOTTOM SHEET (presets) ──────────────────────────── */
+  .presets-panel {
+    position: fixed;
+    bottom: 56px;
+    left: 0;
+    right: 0;
+    height: 50vh;
+    width: 100%;
+    border-right: none;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    z-index: 50;
+    transform: translateY(110%);
+    transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    display: flex; /* always in DOM, hidden via transform */
+  }
+  .presets-panel.sheet-open { transform: translateY(0); }
+
+  .preset-list { padding-bottom: 16px; }
+
+  /* Handle bar at top of sheet */
+  .sheet-handle-bar {
+    display: block;
+    flex-shrink: 0;
+    height: 20px;
+    cursor: pointer;
+    position: relative;
+  }
+  .sheet-handle-bar::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+  }
 
   /* Mobile tab bar */
   .mobile-tabbar {
     display: flex;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0; left: 0; right: 0;
     height: 56px;
     background: white;
     border-top: 1px solid #e0e0e0;
     z-index: 100;
     box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
   }
-
   .mobile-tab {
     flex: 1;
     display: flex;

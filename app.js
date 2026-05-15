@@ -177,15 +177,7 @@ function renderTimetable() {
     setTimeout(autoResize, 0);
 
     // Push undo when user starts editing a slot (once per focus, not per keystroke)
-    textarea.addEventListener('focus', () => {
-      // Mobile: if a preset is selected, apply it instead of focusing
-      if (isMobile() && selectedPreset) {
-        applyMobilePreset(group, textarea, autoResize);
-        textarea.blur();
-        return;
-      }
-      pushUndo();
-    });
+    textarea.addEventListener('focus', pushUndo);
 
     // Drop target
     row.addEventListener('dragover', e => {
@@ -324,6 +316,20 @@ function renderPresets() {
     });
     item.addEventListener('dragend', () => item.classList.remove('dragging'));
 
+    // Mobile touch drag
+    let touchMoved = false;
+    item.addEventListener('touchstart', e => {
+      touchMoved = false;
+    }, { passive: true });
+    item.addEventListener('touchmove', e => {
+      if (!touchMoved) { touchMoved = true; startTouchDrag(text, e.touches[0]); }
+      else moveTouchGhost(e.touches[0]);
+      e.preventDefault();
+    }, { passive: false });
+    item.addEventListener('touchend', e => {
+      if (touchMoved) endTouchDrag();
+    });
+
     const handle = document.createElement('span');
     handle.className = 'drag-handle';
     handle.textContent = '⠿';
@@ -355,12 +361,6 @@ function renderPresets() {
     del.title = 'Delete';
     del.onclick = () => deletePreset(idx);
 
-    // Mobile: tap item to select, then tap slot to apply
-    item.addEventListener('click', e => {
-      if (isMobile() && !e.target.closest('.preset-delete')) {
-        selectPresetMobile(text, item);
-      }
-    });
 
     item.appendChild(handle);
     item.appendChild(label);
@@ -533,55 +533,70 @@ window.goToToday = async function () {
   if (currentDate !== TODAY) await loadDateTimetable(TODAY);
 };
 
-// ── MOBILE TABS ──────────────────────────────────────────────
-window.switchMobileTab = function (tab) {
-  const timetablePanel = document.querySelector('.timetable-panel');
-  const presetsPanel   = document.querySelector('.presets-panel');
-  const tabSchedule    = document.getElementById('tab-schedule');
-  const tabPresets     = document.getElementById('tab-presets');
-  if (tab === 'presets') {
-    timetablePanel.classList.add('mobile-hidden');
-    presetsPanel.classList.add('mobile-active');
-    tabPresets.classList.add('active');
-    tabSchedule.classList.remove('active');
-  } else {
-    timetablePanel.classList.remove('mobile-hidden');
-    presetsPanel.classList.remove('mobile-active');
-    tabSchedule.classList.add('active');
-    tabPresets.classList.remove('active');
-  }
-};
-
-// ── MOBILE TAP-TO-APPLY ──────────────────────────────────────
+// ── MOBILE UTILS ─────────────────────────────────────────────
 function isMobile() { return window.innerWidth <= 768; }
 
-window.clearMobilePreset = function () {
-  selectedPreset = null;
-  document.querySelectorAll('.preset-item.mobile-selected')
-    .forEach(el => el.classList.remove('mobile-selected'));
-  document.getElementById('mobile-preset-hint').classList.add('hidden');
+// ── BOTTOM SHEET ─────────────────────────────────────────────
+window.openPresetSheet = function () {
+  document.getElementById('presets-panel').classList.add('sheet-open');
+  document.getElementById('sheet-backdrop').classList.add('active');
+  document.getElementById('tab-presets').classList.add('active');
+  document.getElementById('tab-schedule').classList.remove('active');
 };
 
-function selectPresetMobile(text, itemEl) {
-  if (selectedPreset === text) { clearMobilePreset(); return; }
-  clearMobilePreset();
-  selectedPreset = text;
-  itemEl.classList.add('mobile-selected');
-  document.getElementById('mobile-preset-name').textContent = `"${text}"`;
-  document.getElementById('mobile-preset-hint').classList.remove('hidden');
-  // Auto-switch to schedule tab so user can tap a slot
-  switchMobileTab('schedule');
+window.closePresetSheet = function () {
+  document.getElementById('presets-panel').classList.remove('sheet-open');
+  document.getElementById('sheet-backdrop').classList.remove('active');
+  document.getElementById('tab-schedule').classList.add('active');
+  document.getElementById('tab-presets').classList.remove('active');
+};
+
+// ── TOUCH DRAG (mobile: drag preset → drop on timetable slot) ─
+let touchDragText    = null;
+let touchDragGhost   = null;
+let touchDropTarget  = null;
+
+function startTouchDrag(text, touch) {
+  touchDragText = text;
+  touchDragGhost = document.createElement('div');
+  touchDragGhost.className = 'drag-ghost';
+  touchDragGhost.textContent = text;
+  document.body.appendChild(touchDragGhost);
+  moveTouchGhost(touch);
 }
 
-function applyMobilePreset(group, textarea, autoResize) {
-  if (!selectedPreset) return false;
-  pushUndo();
-  textarea.value = textarea.value ? `${textarea.value}\n${selectedPreset}` : selectedPreset;
-  group.text = textarea.value;
-  autoResize();
-  debouncedSave();
-  clearMobilePreset();
-  return true;
+function moveTouchGhost(touch) {
+  if (!touchDragGhost) return;
+  touchDragGhost.style.left = touch.clientX + 'px';
+  touchDragGhost.style.top  = touch.clientY + 'px';
+  // Find slot row under finger
+  touchDragGhost.style.visibility = 'hidden';
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  touchDragGhost.style.visibility = '';
+  const row = el?.closest('.slot-row');
+  if (touchDropTarget !== row) {
+    touchDropTarget?.classList.remove('drag-over');
+    touchDropTarget = row;
+    row?.classList.add('drag-over');
+  }
+}
+
+function endTouchDrag() {
+  touchDragGhost?.remove();
+  touchDragGhost = null;
+  touchDropTarget?.classList.remove('drag-over');
+  if (touchDropTarget && touchDragText) {
+    const groupId = touchDropTarget.dataset.id;
+    const group   = slotGroups.find(g => g.id === groupId);
+    if (group) {
+      pushUndo();
+      group.text = group.text ? `${group.text}\n${touchDragText}` : touchDragText;
+      renderTimetable();
+      debouncedSave();
+    }
+  }
+  touchDropTarget = null;
+  touchDragText   = null;
 }
 
 // ── SETTINGS POPUP ───────────────────────────────────────────
